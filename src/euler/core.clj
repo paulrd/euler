@@ -65,9 +65,170 @@
 
 ;; (s3 600851475143 [] 2)
 
+;; Largest palindrome product
+;; Problem 4
 
+;; A palindromic number reads the same both ways. The largest palindrome made
+;; from the product of two 2-digit numbers is 9009 = 91 × 99.
 
+;; Find the largest palindrome made from the product of two 3-digit numbers.
 
+;; Let's start by making the sequence of products of 3-digit numbers.
 
+(defn s4 []
+  (let [products (for [i (range 100 1000) j (range i 1000)]
+                   (str (* i j)))]
+    (->> products (filter #(= (seq %) (reverse %))) (map read-string) sort last)))
 
+;; Smallest multiple
+;; Problem 5
 
+;; 2520 is the smallest number that can be divided by each of the numbers from 1
+;; to 10 without any remainder.
+
+;; What is the smallest positive number that is evenly divisible by all of the
+;; numbers from 1 to 20?
+
+;; I need only check the that the number is a multiple of 11 through 20 since
+;; the lower multiples contain these
+
+(defn s5 [candidate factor]
+  (if (= factor 10)
+    candidate
+    (if (= (mod candidate factor) 0)
+      (recur candidate (dec factor))
+      (recur (+ candidate 20) 19))))
+;; (s5 20 19)
+
+;; better:
+(def prime-product (reduce * [1 2 3 5 7 11 13 17 19]))
+(defn evenly-divisible? [n] (every? #(zero? (rem n %)) (range 10 21)))
+;; (first (filter evenly-divisible? (iterate #(+ % prime-product) prime-product)))
+
+;; Sum square difference
+;; Problem 6
+;; The sum of the squares of the first ten natural numbers is,
+
+;; 12 + 22 + ... + 102 = 385
+;; The square of the sum of the first ten natural numbers is,
+
+;; (1 + 2 + ... + 10)2 = 552 = 3025
+
+;; Hence the difference between the sum of the squares of the first ten natural
+;; numbers and the square of the sum is 3025 − 385 = 2640.
+
+;; Find the difference between the sum of the squares of the first one hundred
+;; natural numbers and the square of the sum.
+
+;; Brute force?
+
+(defn s6 [] 
+  (let [sum-of-squares (apply + (map #(* % %) (range 101)))
+        s (apply + (range 101))
+        square-of-sum (* s s)]
+    (- square-of-sum sum-of-squares)))
+
+;; 10001st prime
+;; Problem 7
+
+;; By listing the first six prime numbers: 2, 3, 5, 7, 11, and 13, we can see
+;; that the 6th prime is 13.
+
+;; What is the 10 001st prime number?
+
+;; Can we just test all the numbers for primeness until we get 10k?
+
+(defn prime? [n primes]
+  (let [limit (Math/sqrt n)
+        test-these (take-while #(<= % limit) primes)]
+    (not-any? #(zero? (mod n %)) test-these)))
+
+(defn s7 [] 
+  (loop [primes [2]
+         candidate 3]
+    (if (= (count primes) 10001)
+      (last primes)
+      (if (prime? candidate primes)
+        (recur (conj primes candidate) (inc candidate))
+        (recur primes (inc candidate))))))
+
+;; problem 8
+
+(def num 7316717653133062491922511967442657474235534919493496983520312774506326239578318016984801869478851843858615607891129494954595017379583319528532088055111254069874715852386305071569329096329522744304355766896648950445244523161731856403098711121722383113622298934233803081353362766142828064444866452387493035890729629049156044077239071381051585930796086670172427121883998797908792274921901699720888093776657273330010533678812202354218097512545405947522435258490771167055601360483958644670632441572215539753697817977846174064955149290862569321978468622482839722413756570560574902614079729686524145351004748216637048440319989000889524345065854122758866688116427171479924442928230863465674813919123162824586178664583591245665294765456828489128831426076900422421902267105562632111110937054421750694165896040807198403850962455444362981230987879927244284909188845801561660979191338754992005240636899125607176060588611646710940507754100225698315520005593572972571636269561882670428252483600823257530420752963450)
+
+(defn max-product [s c]
+  (let [s (map #(read-string (str %)) s)
+        thirt (drop c s)
+        start-val (apply * (take c s))]
+    (if (> (count s) c)
+      (let [changes (map #(vector %1 %2) s thirt)]
+        (last (reduce #(let [new-val (/ (* (first %1) (last %2)) (first %2))]
+                         (if (> new-val (last %1)) 
+                           [new-val new-val] 
+                           [new-val (last %1)])) 
+                      [start-val start-val] changes)))
+      start-val)))
+
+(def s (map #(str %) 
+            (filter #(>= (count %) 13) (clojure.string/split (str num) #"0"))))
+
+;; (time (apply max (map #(max-product % 13) s)))
+
+;; Special Pythagorean triplet
+;; Problem 9
+
+(defn s9 [] 
+  (loop [c 335 a 1]
+    (when (< c 998)
+      (if (= a c)
+        (recur (inc c) 1)
+        (let [b (Math/sqrt (- (* c c) (* a a)))]
+          (if (= (+ a b c) 1000.0)
+            (int (* a b c))
+            (recur c (inc a))))))))
+
+;; Summation of primes
+;; Problem 10
+;; The sum of the primes below 10 is 2 + 3 + 5 + 7 = 17.
+
+;; Find the sum of all the primes below two million.
+
+(defn s10 []
+  (loop [primes [2]
+         candidate 3]
+    (if (> candidate 2000000)
+      (apply + primes)
+      (if (prime? candidate primes)
+        (recur (conj primes candidate) (+ candidate 2))
+        (recur primes (+ candidate 2))))))
+
+;; this is slow; use seive as in overview
+
+(defn s10b [limit]
+  (let [cross-limit (int (Math/sqrt limit))]
+    (loop [candidates (range 3 limit 2)
+           primes [2]]
+      (if (> (first candidates) cross-limit)
+        (reduce + (concat primes candidates))
+        (recur (remove #(zero? (mod % (first candidates))) candidates)
+               (conj primes (first candidates)))))))
+
+(defn lazy-primes-cgrande []
+  (letfn [(enqueue [sieve n step]
+            (let [m (+ n step)]
+              (if (sieve m)
+                (recur sieve m step)
+                (assoc sieve m step))))
+          (next-sieve [sieve n]            
+            (if-let [step (sieve n)]
+              (-> sieve
+                  (dissoc n)    
+                  (enqueue n step))
+              (enqueue sieve n (+ n n))))
+          (next-primes [sieve n]
+            (if (sieve n) 
+              (recur (next-sieve sieve n) (+ n 2))
+              (cons n (lazy-seq (next-primes (next-sieve sieve n) (+ n 2))))))]
+    (cons 2 (lazy-seq (next-primes {} 3)))))
+
+(defn euler-10 [] (reduce + (take-while #(> 2000000 %) (lazy-primes-cgrande))))
